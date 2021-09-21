@@ -81,8 +81,9 @@ class InnerNode extends BPlusNode {
     @Override
     public LeafNode get(DataBox key) {
         // TODO(proj2): implement
-
-        return null;
+        int correct_index = numLessThanEqual(key, keys);
+        BPlusNode child = getChild(correct_index);
+        return child.get(key);
     }
 
     // See BPlusNode.getLeftmostLeaf.
@@ -91,7 +92,8 @@ class InnerNode extends BPlusNode {
         assert(children.size() > 0);
         // TODO(proj2): implement
 
-        return null;
+        BPlusNode leftmostChild = getChild(0);
+        return leftmostChild.getLeftmostLeaf();
     }
 
     // See BPlusNode.put.
@@ -99,7 +101,47 @@ class InnerNode extends BPlusNode {
     public Optional<Pair<DataBox, Long>> put(DataBox key, RecordId rid) {
         // TODO(proj2): implement
 
-        return Optional.empty();
+        // Get the correct child and see what it returns
+        int keyindex = numLessThanEqual(key, this.keys);
+        BPlusNode correct_child = this.getChild(keyindex);
+        Optional<Pair<DataBox, Long>> result = correct_child.put(key, rid);
+
+        if (result.isPresent()) {
+            //split occured in children. I need to (1) insert, (2) readjust my pointers and (3) check for my overflow
+            DataBox insert_key = result.get().getFirst();
+            Long my_new_child = result.get().getSecond();
+            int insert_index = numLessThanEqual(insert_key, this.keys);
+
+            //(1) insert and (2) re-adjust pointers
+            this.keys.add(insert_index, insert_key);
+            this.children.add(insert_index + 1, my_new_child);
+
+            //(3) deal with overflow
+            if (this.keys.size() > 2 * this.metadata.getOrder()) {
+                ArrayList<DataBox> k2 = new ArrayList<DataBox>();
+                ArrayList<Long> c2 = new ArrayList<Long>();
+
+                c2.add(0, this.children.remove(children.size() - 1));
+                while (k2.size() + 1 < this.keys.size()) {
+                    k2.add(0, this.keys.remove(keys.size() - 1));
+                    c2.add(0, this.children.remove(children.size() - 1));
+                }
+
+                DataBox splitkey = this.keys.remove(keys.size() - 1);
+                InnerNode right = new InnerNode(this.metadata, this.bufferManager, k2, c2, treeContext);
+                sync();
+                return Optional.of(new Pair<DataBox, Long>(splitkey, right.getPage().getPageNum()));
+
+            } else {
+                //no overflow
+                sync();
+                return Optional.empty();
+            }
+        } else {
+            //split did not occur in children, no changes needed
+            sync();
+            return Optional.empty();
+        }
     }
 
     // See BPlusNode.bulkLoad.
@@ -115,7 +157,10 @@ class InnerNode extends BPlusNode {
     @Override
     public void remove(DataBox key) {
         // TODO(proj2): implement
-
+        int correct_index = numLessThanEqual(key, keys);
+        BPlusNode correct_child = getChild(correct_index);
+        correct_child.remove(key);
+        sync();
         return;
     }
 
