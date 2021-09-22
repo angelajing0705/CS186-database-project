@@ -149,8 +149,55 @@ class InnerNode extends BPlusNode {
     public Optional<Pair<DataBox, Long>> bulkLoad(Iterator<Pair<DataBox, RecordId>> data,
             float fillFactor) {
         // TODO(proj2): implement
+        Optional<Pair<DataBox, Long>> retval = Optional.empty();
+        boolean has_split = false;
 
-        return Optional.empty();
+        while(data.hasNext() && !has_split) {
+
+            // Get the rightmost child and see what it returns
+            BPlusNode correct_child = this.getChild(this.children.size() - 1);
+            Optional<Pair<DataBox, Long>> result = correct_child.bulkLoad(data, fillFactor);
+
+            if (result.isPresent()) {
+                //split occured in children. I need to (1) insert, (2) readjust my pointers and (3) check for my overflow
+                DataBox insert_key = result.get().getFirst();
+                Long my_new_child = result.get().getSecond();
+                int insert_index = numLessThanEqual(insert_key, this.keys);
+
+                //(1) insert and (2) re-adjust pointers
+                this.keys.add(insert_index, insert_key);
+                this.children.add(insert_index + 1, my_new_child);
+
+                //(3) deal with overflow
+                if (this.keys.size() > 2 * this.metadata.getOrder()) {
+                    ArrayList<DataBox> k2 = new ArrayList<DataBox>();
+                    ArrayList<Long> c2 = new ArrayList<Long>();
+
+                    c2.add(0, this.children.remove(children.size() - 1));
+                    while (k2.size() + 1 < this.keys.size()) {
+                        k2.add(0, this.keys.remove(keys.size() - 1));
+                        c2.add(0, this.children.remove(children.size() - 1));
+                    }
+
+                    DataBox splitkey = this.keys.remove(keys.size() - 1);
+                    InnerNode right = new InnerNode(this.metadata, this.bufferManager, k2, c2, treeContext);
+                    sync();
+                    has_split = true;
+                    retval = Optional.of(new Pair<DataBox, Long>(splitkey, right.getPage().getPageNum()));
+
+                } else {
+                    //no overflow
+                    sync();
+                    retval = Optional.empty();
+                }
+            } else {
+                //split did not occur in children, no changes needed
+                sync();
+                retval = Optional.empty();
+            }
+        }
+
+        return retval;
     }
 
     // See BPlusNode.remove.

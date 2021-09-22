@@ -204,7 +204,7 @@ public class BPlusTree {
 
         // TODO(proj2): Return a BPlusTreeIterator.
 
-        return Collections.emptyIterator();
+        return new BPlusTreeIterator(this.root);
     }
 
     /**
@@ -236,8 +236,8 @@ public class BPlusTree {
         LockUtil.ensureSufficientLockHeld(lockContext, LockType.NL);
 
         // TODO(proj2): Return a BPlusTreeIterator.
-
-        return Collections.emptyIterator();
+        LeafNode start = this.root.get(key);
+        return new BPlusTreeIterator(start, key);
     }
 
     /**
@@ -302,7 +302,24 @@ public class BPlusTree {
         // Note: You should NOT update the root variable directly.
         // Use the provided updateRoot() helper method to change
         // the tree's root if the old root splits.
+        while (data.hasNext()) {
+            Optional<Pair<DataBox, Long>> result = root.bulkLoad(data, fillFactor);
+            if (result.isPresent()) {
+                //resulted in root splitting, need to create new root
+                DataBox insert_key = result.get().getFirst();
+                Long my_new_child = result.get().getSecond();
 
+                ArrayList<DataBox> new_keys = new ArrayList<DataBox>();
+                ArrayList<Long> new_children = new ArrayList<Long>();
+
+                new_keys.add(insert_key);
+                new_children.add(root.getPage().getPageNum());
+                new_children.add(my_new_child);
+
+                BPlusNode new_root = new InnerNode(metadata, bufferManager, new_keys, new_children, lockContext);
+                updateRoot(new_root);
+            }
+        }
         return;
     }
 
@@ -437,19 +454,39 @@ public class BPlusTree {
     // Iterator ////////////////////////////////////////////////////////////////
     private class BPlusTreeIterator implements Iterator<RecordId> {
         // TODO(proj2): Add whatever fields and constructors you want here.
+        private Iterator<RecordId> curr_iter;
+        private LeafNode curr_leaf;
+
+        //For scan all
+        public BPlusTreeIterator(BPlusNode root) {
+            this.curr_leaf = root.getLeftmostLeaf();
+            this.curr_iter = this.curr_leaf.scanAll();
+        }
+
+        //For scanning from specified Leafnode
+        public BPlusTreeIterator(LeafNode start, DataBox key) {
+            this.curr_leaf = start;
+            this.curr_iter = start.scanGreaterEqual(key);
+        }
 
         @Override
         public boolean hasNext() {
             // TODO(proj2): implement
-
-            return false;
+            return this.curr_iter.hasNext() || this.curr_leaf.getRightSibling().isPresent();
         }
 
         @Override
         public RecordId next() {
             // TODO(proj2): implement
-
-            throw new NoSuchElementException();
+            if (this.curr_iter.hasNext()) {
+                return this.curr_iter.next();
+            } else if (this.curr_leaf.getRightSibling().isPresent()) {
+                this.curr_leaf = this.curr_leaf.getRightSibling().get();
+                this.curr_iter = this.curr_leaf.scanAll();
+                return next();
+            } else {
+                throw new NoSuchElementException("End of iterator");
+            }
         }
     }
 }

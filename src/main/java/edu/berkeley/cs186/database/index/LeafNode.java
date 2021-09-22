@@ -202,8 +202,47 @@ class LeafNode extends BPlusNode {
     public Optional<Pair<DataBox, Long>> bulkLoad(Iterator<Pair<DataBox, RecordId>> data,
             float fillFactor) {
         // TODO(proj2): implement
+        Optional<Pair<DataBox, Long>> result = Optional.empty();
+        boolean has_split = false;
 
-        return Optional.empty();
+        while (data.hasNext() && !has_split) {
+            Pair<DataBox, RecordId> curr_data = data.next();
+            DataBox key = curr_data.getFirst();
+            RecordId rid = curr_data.getSecond();
+
+            if (keys.contains((key))) {
+                throw new BPlusTreeException("No duplicate keys allowed");
+            }
+
+            // Find the correct index
+            int keyindex = InnerNode.numLessThanEqual(key, this.keys);
+
+            //Insert
+            this.keys.add(keyindex, key);
+            this.rids.add(keyindex, rid);
+
+            //Check for fillfactor overflow
+            if (this.keys.size() <= Math.ceil(fillFactor * 2 * this.metadata.getOrder())) {
+                sync();
+                result = Optional.empty();
+            } else {
+                // Create new keys and rids list
+                List<DataBox> k2 = new ArrayList<DataBox>();
+                List<RecordId> r2 = new ArrayList<RecordId>();
+                k2.add(0, this.keys.remove(keys.size() - 1));
+                r2.add(0, this.rids.remove(rids.size() - 1));
+
+                // Create new node, adjust pointers.
+                LeafNode new_right = new LeafNode(this.metadata, this.bufferManager, k2, r2, this.rightSibling, this.treeContext);
+                long right_node_page_num = new_right.getPage().getPageNum();
+                this.rightSibling = Optional.of(right_node_page_num);
+                sync();
+                has_split = true;
+                result = Optional.of(new Pair<DataBox, Long>(new_right.keys.get(0), right_node_page_num));
+            }
+        }
+
+        return result;
     }
 
     // See BPlusNode.remove.
