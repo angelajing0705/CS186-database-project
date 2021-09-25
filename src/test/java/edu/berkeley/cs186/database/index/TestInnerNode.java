@@ -393,6 +393,7 @@ public class TestInnerNode {
         String leaf2 = "((21 (21 21)) (22 (22 22)) (23 (23 23)))";
         String expected = String.format("(%s 10 %s 20 %s)", leaf0, leaf1, leaf2);
         assertEquals(expected, inner.toSexp());
+        checkTreeMatchesExpectations();
     }
 
     @Test

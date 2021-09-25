@@ -264,12 +264,12 @@ public class BPlusTree {
             DataBox insert_key = result.get().getFirst();
             Long my_new_child = result.get().getSecond();
 
-            ArrayList<DataBox> new_keys = new ArrayList<DataBox>();
-            ArrayList<Long> new_children = new ArrayList<Long>();
+            ArrayList<DataBox> new_keys = new ArrayList<>();
+            ArrayList<Long> new_children = new ArrayList<>();
 
             new_keys.add(insert_key);
             new_children.add(root.getPage().getPageNum());
-            new_children.add(my_new_child);
+            new_children.add(my_new_child);///New upper root node, one key two children.
 
             BPlusNode new_root = new InnerNode(metadata, bufferManager, new_keys, new_children, lockContext);
             updateRoot(new_root);
@@ -298,11 +298,16 @@ public class BPlusTree {
         // TODO(proj4_integration): Update the following line
         LockUtil.ensureSufficientLockHeld(lockContext, LockType.NL);
 
+        if (!(root.getLeftmostLeaf().equals(root) && root.getLeftmostLeaf().getKeys().size() == 0)) {
+                throw new BPlusTreeException("Tree must be empty for bulkload");
+        }
+
         // TODO(proj2): implement
         // Note: You should NOT update the root variable directly.
         // Use the provided updateRoot() helper method to change
         // the tree's root if the old root splits.
         while (data.hasNext()) {
+
             Optional<Pair<DataBox, Long>> result = root.bulkLoad(data, fillFactor);
             if (result.isPresent()) {
                 //resulted in root splitting, need to create new root
@@ -472,7 +477,18 @@ public class BPlusTree {
         @Override
         public boolean hasNext() {
             // TODO(proj2): implement
-            return this.curr_iter.hasNext() || this.curr_leaf.getRightSibling().isPresent();
+            if (this.curr_iter.hasNext()) {
+                return true;
+            } else if (this.curr_leaf.getRightSibling().isPresent()) {
+                LeafNode check_leaf = this.curr_leaf;
+                while (check_leaf.getRightSibling().isPresent()) {
+                    check_leaf = check_leaf.getRightSibling().get();
+                    if (check_leaf.scanAll().hasNext()) {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         @Override

@@ -191,8 +191,9 @@ class LeafNode extends BPlusNode {
             LeafNode new_right = new LeafNode(this.metadata, this.bufferManager, k2, r2, this.rightSibling, this.treeContext);
             long right_node_page_num = new_right.getPage().getPageNum();
             this.rightSibling = Optional.of(right_node_page_num);
-            sync();
             Pair<DataBox, Long> result = new Pair<DataBox, Long>(new_right.keys.get(0), right_node_page_num);
+            //Pass up the first key # in right node, and the right nod page num.
+            sync();
             return Optional.of(result);
         }
     }

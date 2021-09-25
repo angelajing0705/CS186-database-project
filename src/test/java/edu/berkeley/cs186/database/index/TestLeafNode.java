@@ -27,6 +27,7 @@ import org.junit.rules.TestRule;
 import org.junit.rules.Timeout;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.Assert.*;
 
@@ -190,6 +191,110 @@ public class TestLeafNode {
         // The duplicate insert should raise an exception.
         leaf.put(new IntDataBox(0), new RecordId(0, (short) 0));
     }
+
+
+
+
+
+
+
+
+
+
+    //////////////////////////////////////////////////////////////////////
+//RW added.
+    @Test(expected = BPlusTreeException.class)
+    @Category(PublicTests.class)
+    public void testRandomDuplicatePut() {
+        // Tests that a BPlusTreeException is thrown on duplicate put
+
+        int order = 145;
+
+        setBPlusTreeMetadata(Type.intType(), order);
+        LeafNode leaf = getEmptyLeaf(Optional.empty());
+
+        for (int i = 0; i < 2 * order; ++i) {
+            leaf.put(new IntDataBox(i), new RecordId(i*2, (short) ((short) i*3)));
+        }
+
+        int randomNum = ThreadLocalRandom.current().nextInt(0, 2*order);
+
+        leaf.remove(new IntDataBox(randomNum));
+
+        // The initial insert is fine.
+        leaf.put(new IntDataBox(0), new RecordId(0, (short) 0));
+
+        // The duplicate insert should raise an exception.
+        leaf.put(new IntDataBox(0), new RecordId(0, (short) 0));
+    }
+
+    @Test
+    @Category(PublicTests.class)
+    public void testMegaDuplicatePut() {
+        // Tests that a BPlusTreeException is thrown on duplicate put
+        int order = 145;
+        setBPlusTreeMetadata(Type.intType(), order);
+        LeafNode leaf = getEmptyLeaf(Optional.empty());
+
+        for (int i = 0; i < 2 * order; ++i) {
+            leaf.put(new IntDataBox(i), new RecordId(i*2, (short) ((short) i*3)));
+        }
+
+        int randomNum = ThreadLocalRandom.current().nextInt(0, order*2);
+
+        leaf.remove(new IntDataBox(randomNum));
+
+        // The duplicate inserts should raise exceptions.
+        int totalExceptions = 0;
+
+        for (int i = 2 * order - 1; i >= 0; --i) {
+            try{
+                leaf.put(new IntDataBox(i), new RecordId(i*3, (short) ((short) i*4)));
+            } catch (BPlusTreeException e) {
+                totalExceptions++;
+            }
+        }
+        assertEquals(totalExceptions, 2 * order - 1); //-1 because we removed one in the middle.
+    }
+
+    @Test
+    @Category(PublicTests.class)
+    public void testMegaDuplicateRemove() {
+        // Tests that a BPlusTreeException is thrown on duplicate put
+
+        setBPlusTreeMetadata(Type.intType(), 100);
+        LeafNode leaf = getEmptyLeaf(Optional.empty());
+
+        for (int i = 1; i < 2 * 100; ++i) {
+            leaf.put(new IntDataBox(i), new RecordId(i*2, (short) ((short) i*3)));
+        }
+
+        int randomNum1 = ThreadLocalRandom.current().nextInt(0, 200);
+        int randomNum2 = ThreadLocalRandom.current().nextInt(0, 200);
+        int randomNum3 = ThreadLocalRandom.current().nextInt(0, 200);
+
+        leaf.remove(new IntDataBox(randomNum1));
+        leaf.remove(new IntDataBox(randomNum2));
+        leaf.remove(new IntDataBox(randomNum3));
+
+        for (int i = 0; i < 100; i++) {
+            assertFalse(leaf.getKey(DataBox.fromObject(randomNum3)).isPresent());
+            leaf.put(new IntDataBox(randomNum3), new RecordId(0, (short) 0));
+            assertTrue(leaf.getKey(DataBox.fromObject(randomNum3)).isPresent());
+            for (int j = 0; j < 3; j++) {
+                leaf.remove(new IntDataBox(randomNum3));
+            }
+        }
+    }
+
+
+
+
+
+
+
+    ////////////////////////////////////////////////////////////////////////
+
 
     @Test
     @Category(PublicTests.class)
