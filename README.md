@@ -10,17 +10,13 @@ locking to support concurrent execution of transactions, and database recovery.
 This project was written in Java 8 using the IntelliJ IDE. Tests were written using the Junit package. 
 The files below have been modified from the original source code and contain all the self-implemented functions and data structures. 
 
-index/ \newline
-BPlusTree.java, InnerNode.java, LeafNode.java
+index/ BPlusTree.java, InnerNode.java, LeafNode.java
 
-query/join/ \newline
-BNLJOperator.java, GHJOperator.java, SHJOperator.java, SortMergeOperator.java, a few functions in QueryPlan.java
+query/join/ BNLJOperator.java, GHJOperator.java, SHJOperator.java, SortMergeOperator.java, a few functions in QueryPlan.java
 
-concurrency/ \newline
-LockContext.java, LockManager.java, LockType.java, LockUtil.java
+concurrency/ LockContext.java, LockManager.java, LockType.java, LockUtil.java
 
-recovery/ \newline
-ARIESRecoveryManager.java
+recovery/ ARIESRecoveryManager.java
 
 ## Overview
 In this document we will be giving an overview of the code structure. 
