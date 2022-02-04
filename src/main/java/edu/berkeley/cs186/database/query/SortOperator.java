@@ -87,7 +87,15 @@ public class SortOperator extends QueryOperator {
      */
     public Run sortRun(Iterator<Record> records) {
         // TODO(proj3_part1): implement
-        return null;
+        assert records != null;
+        List <Record> recordList = new ArrayList<>();
+        while (records.hasNext()) {
+            recordList.add(records.next());
+        }
+        Collections.sort(recordList, this.comparator);
+        Run result = makeRun();
+        result.addAll(recordList);
+        return result;
     }
 
     /**
@@ -108,7 +116,52 @@ public class SortOperator extends QueryOperator {
     public Run mergeSortedRuns(List<Run> runs) {
         assert (runs.size() <= this.numBuffers - 1);
         // TODO(proj3_part1): implement
-        return null;
+
+        if (runs == null) {
+            return null;
+        }
+
+        Run result = makeRun();
+        PriorityQueue<Pair<Record, Integer>> priorityQ = new PriorityQueue<>(new RecordPairComparator());
+
+        // First round: add one record from each run to priority queue
+        List<List<Record>> allRunsList = new ArrayList<>();
+        for (int i = 0; i < runs.size(); i++) {
+            // Create list over iterator elements
+            Run thisRun = runs.get(i);
+            Iterator<Record> thisRunIter = thisRun.iterator();
+            List<Record> thisRunList = new ArrayList<>();
+            thisRunIter.forEachRemaining(thisRunList::add);
+            allRunsList.add(thisRunList);
+            //Add first element to priorityQ
+            priorityQ.add(new Pair<> (thisRunList.remove(0), i));
+        }
+
+        // In each iteration we (1) add min element to result and (2) add another element into priorityQ
+        // For (2), we first try add the next Record from the same Run that produced the most recent priorityQ poll.
+        // If there are no more Records left in that run, we simply find the first non-empty run and add an element there.
+        int nextAdd;
+        while (!priorityQ.isEmpty()) {
+            Pair<Record, Integer> minQelem = priorityQ.poll();
+            if (minQelem != null) {
+                result.add(minQelem.getFirst());
+                nextAdd = minQelem.getSecond();
+                List <Record> targetList = allRunsList.get(nextAdd);
+                if (targetList.size() > 0) {
+                    priorityQ.add(new Pair<> (targetList.remove(0), nextAdd));
+                } else {
+                    //Find first non-empty run and add element to priorityQ
+                    for (int i = 0; i < allRunsList.size(); i++) {
+                        List<Record> thisRunList = allRunsList.get(i);
+                        if (thisRunList.size() > 0) {
+                            priorityQ.add(new Pair<> (thisRunList.remove(0), i));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     /**
@@ -133,7 +186,19 @@ public class SortOperator extends QueryOperator {
      */
     public List<Run> mergePass(List<Run> runs) {
         // TODO(proj3_part1): implement
-        return Collections.emptyList();
+
+        if (runs == null) {
+            return null;
+        }
+
+        List<Run> result = new ArrayList<>();
+        // In each iteration, merge (B - 1) runs
+        for (int i = 0; i < runs.size(); i += this.numBuffers - 1) {
+            int end = Math.min(runs.size(), i + this.numBuffers - 1);
+            List<Run> setOfRuns = runs.subList(i, end);
+            result.add(mergeSortedRuns(setOfRuns));
+        }
+        return result;
     }
 
     /**
@@ -147,9 +212,22 @@ public class SortOperator extends QueryOperator {
     public Run sort() {
         // Iterator over the records of the relation we want to sort
         Iterator<Record> sourceIterator = getSource().iterator();
-
         // TODO(proj3_part1): implement
-        return makeRun(); // TODO(proj3_part1): replace this!
+
+        //Pass 0: create sorted runs of length B
+        ArrayList<Run> Runs0 = new ArrayList<>();
+        while (sourceIterator.hasNext()) {
+            BacktrackingIterator<Record> blockIter = getBlockIterator(sourceIterator, this.getSchema(), this.numBuffers);
+            Runs0.add(sortRun(blockIter));
+        }
+
+        //Pass 1- end: merge runs until we have one final run remaining
+        List<Run> result = Runs0;
+        while (result.size() > 1) {
+            result = mergePass(result);
+        }
+
+        return result.size() > 0 ? result.get(0) : makeRun();
     }
 
     /**

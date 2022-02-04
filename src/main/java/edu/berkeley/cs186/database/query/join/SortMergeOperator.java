@@ -139,7 +139,41 @@ public class SortMergeOperator extends JoinOperator {
          * or null if there are no more records to join.
          */
         private Record fetchNextRecord() {
-            // TODO(proj3_part1): implement
+
+            if (this.leftRecord == null || this.rightIterator == null) {
+                return null;
+            }
+
+            //Following Pseudo-code from Course Notes
+            do {
+                if (!this.marked) {
+                    //If unmarked, find first matching pair and mark right iterator.
+                    while (this.leftRecord != null && this.rightRecord != null && compare(leftRecord, rightRecord) != 0) {
+                        if (compare(this.leftRecord, this.rightRecord) < 0) {
+                            this.leftRecord = this.leftIterator.hasNext() ? this.leftIterator.next() : null;
+                        } else {
+                            this.rightRecord = this.rightIterator.hasNext() ? this.rightIterator.next() : null;
+                        }
+                    }
+                    rightIterator.markPrev();
+                    this.marked = true;
+                }
+                if (this.leftRecord != null && this.rightRecord != null && compare(this.leftRecord, this.rightRecord) == 0) {
+                    //Upon match, increment right iterator only.
+                    Record result = this.leftRecord.concat(this.rightRecord);
+                    this.rightRecord = this.rightIterator.hasNext() ? this.rightIterator.next() : null;
+                    this.nextRecord = result;
+                    return result;
+                } else {
+                    // No more matches, increment leftRecord, reset rightRecord to mark. Unmark previous mark.
+                    this.rightIterator.reset();
+                    this.rightRecord = this.rightIterator.hasNext() ? this.rightIterator.next() : null;
+                    this.leftRecord = this.leftIterator.hasNext() ? this.leftIterator.next() : null;
+
+                    this.marked = false;
+                }
+            } while (this.leftRecord != null);
+
             return null;
         }
 

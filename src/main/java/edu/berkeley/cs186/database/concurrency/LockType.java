@@ -3,6 +3,9 @@ package edu.berkeley.cs186.database.concurrency;
 /**
  * Utility methods to track the relationships between different lock types.
  */
+
+// CoreAPI (Self-implemented helper functions) ////////////////////////////////////////////////////////////////
+
 public enum LockType {
     S,   // shared
     X,   // exclusive
@@ -21,8 +24,21 @@ public enum LockType {
         if (a == null || b == null) {
             throw new NullPointerException("null lock type");
         }
-        // TODO(proj4_part1): implement
-
+        
+        switch (a) {
+            case X:
+                return (b==NL);
+            case IS:
+                return (b!=X);
+            case IX:
+                return (b==NL||b==IS||b==IX);
+            case SIX:
+                return (b==NL||b==IS);
+            case NL:
+                return true;
+            case S:
+                return (b==NL||b==IS||b==S);
+        }
         return false;
     }
 
@@ -53,8 +69,19 @@ public enum LockType {
         if (parentLockType == null || childLockType == null) {
             throw new NullPointerException("null lock type");
         }
-        // TODO(proj4_part1): implement
-
+        
+        switch (parentLockType) {
+            case X:
+            case NL:
+            case S:
+                return (childLockType==NL);
+            case IS:
+                return (childLockType==NL||childLockType==IS||childLockType==S);
+            case IX:
+                return true;
+            case SIX:
+                return (childLockType==NL||childLockType==IX||childLockType==X);
+        }
         return false;
     }
 
@@ -68,8 +95,21 @@ public enum LockType {
         if (required == null || substitute == null) {
             throw new NullPointerException("null lock type");
         }
-        // TODO(proj4_part1): implement
-
+        
+        switch (substitute) {
+            case X:
+                return (required==NL||required==S||required==X);
+            case NL:
+                return (required==NL);
+            case IS:
+                return (required==NL||required==IS);
+            case IX:
+                return (required==NL||required==IS||required==IX);
+            case SIX:
+                return (required==NL||required==SIX||required==S);
+            case S:
+                return (required==NL||required==S);
+        }
         return false;
     }
 

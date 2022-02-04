@@ -76,11 +76,10 @@ class InnerNode extends BPlusNode {
         }
     }
 
-    // Core API ////////////////////////////////////////////////////////////////
+    // Core API (Self-implemented functions) ////////////////////////////////////////////////////////////////
     // See BPlusNode.get.
     @Override
     public LeafNode get(DataBox key) {
-        // TODO(proj2): implement
         int correct_index = numLessThanEqual(key, keys);
         BPlusNode child = getChild(correct_index);
         return child.get(key);
@@ -90,7 +89,7 @@ class InnerNode extends BPlusNode {
     @Override
     public LeafNode getLeftmostLeaf() {
         assert(children.size() > 0);
-        // TODO(proj2): implement
+        // 
 
         BPlusNode leftmostChild = getChild(0);
         return leftmostChild.getLeftmostLeaf();
@@ -99,7 +98,6 @@ class InnerNode extends BPlusNode {
     // See BPlusNode.put.
     @Override
     public Optional<Pair<DataBox, Long>> put(DataBox key, RecordId rid) {
-        // TODO(proj2): implement
 
         // Get the correct child and see what it returns
         int keyindex = numLessThanEqual(key, this.keys);
@@ -148,7 +146,6 @@ class InnerNode extends BPlusNode {
     @Override
     public Optional<Pair<DataBox, Long>> bulkLoad(Iterator<Pair<DataBox, RecordId>> data,
             float fillFactor) {
-        // TODO(proj2): implement
         Optional<Pair<DataBox, Long>> retval = Optional.empty();
         boolean has_split = false;
 
@@ -203,7 +200,7 @@ class InnerNode extends BPlusNode {
     // See BPlusNode.remove.
     @Override
     public void remove(DataBox key) {
-        // TODO(proj2): implement
+        // 
         int correct_index = numLessThanEqual(key, keys);
         BPlusNode correct_child = getChild(correct_index);
         correct_child.remove(key);

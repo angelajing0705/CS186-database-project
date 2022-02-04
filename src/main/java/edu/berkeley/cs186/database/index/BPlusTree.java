@@ -127,7 +127,7 @@ public class BPlusTree {
         }
     }
 
-    // Core API ////////////////////////////////////////////////////////////////
+    // Core API (Self-implemented functions) ////////////////////////////////////////////////////////////////
     /**
      * Returns the value associated with `key`.
      *
@@ -142,10 +142,7 @@ public class BPlusTree {
      */
     public Optional<RecordId> get(DataBox key) {
         typecheck(key);
-        // TODO(proj4_integration): Update the following line
         LockUtil.ensureSufficientLockHeld(lockContext, LockType.NL);
-
-        // TODO(proj2): implement
 
         LeafNode leaf = this.root.get(key);
         return leaf.getKey(key);
@@ -160,7 +157,7 @@ public class BPlusTree {
      */
     public Iterator<RecordId> scanEqual(DataBox key) {
         typecheck(key);
-        // TODO(proj4_integration): Update the following line
+
         LockUtil.ensureSufficientLockHeld(lockContext, LockType.NL);
 
         Optional<RecordId> rid = get(key);
@@ -199,10 +196,8 @@ public class BPlusTree {
      * memory will receive 0 points.
      */
     public Iterator<RecordId> scanAll() {
-        // TODO(proj4_integration): Update the following line
-        LockUtil.ensureSufficientLockHeld(lockContext, LockType.NL);
 
-        // TODO(proj2): Return a BPlusTreeIterator.
+        LockUtil.ensureSufficientLockHeld(lockContext, LockType.NL);
 
         return new BPlusTreeIterator(this.root);
     }
@@ -232,10 +227,9 @@ public class BPlusTree {
      */
     public Iterator<RecordId> scanGreaterEqual(DataBox key) {
         typecheck(key);
-        // TODO(proj4_integration): Update the following line
+
         LockUtil.ensureSufficientLockHeld(lockContext, LockType.NL);
 
-        // TODO(proj2): Return a BPlusTreeIterator.
         LeafNode start = this.root.get(key);
         return new BPlusTreeIterator(start, key);
     }
@@ -251,13 +245,9 @@ public class BPlusTree {
      */
     public void put(DataBox key, RecordId rid) {
         typecheck(key);
-        // TODO(proj4_integration): Update the following line
+
         LockUtil.ensureSufficientLockHeld(lockContext, LockType.NL);
 
-        // TODO(proj2): implement
-        // Note: You should NOT update the root variable directly.
-        // Use the provided updateRoot() helper method to change
-        // the tree's root if the old root splits.
         Optional<Pair<DataBox, Long>> result = root.put(key, rid);
         if (result.isPresent()) {
             //resulted in root splitting, need to create new root
@@ -295,17 +285,12 @@ public class BPlusTree {
      * bulkLoad (see comments in BPlusNode.bulkLoad).
      */
     public void bulkLoad(Iterator<Pair<DataBox, RecordId>> data, float fillFactor) {
-        // TODO(proj4_integration): Update the following line
         LockUtil.ensureSufficientLockHeld(lockContext, LockType.NL);
 
         if (!(root.getLeftmostLeaf().equals(root) && root.getLeftmostLeaf().getKeys().size() == 0)) {
                 throw new BPlusTreeException("Tree must be empty for bulkload");
         }
 
-        // TODO(proj2): implement
-        // Note: You should NOT update the root variable directly.
-        // Use the provided updateRoot() helper method to change
-        // the tree's root if the old root splits.
         while (data.hasNext()) {
 
             Optional<Pair<DataBox, Long>> result = root.bulkLoad(data, fillFactor);
@@ -341,10 +326,8 @@ public class BPlusTree {
      */
     public void remove(DataBox key) {
         typecheck(key);
-        // TODO(proj4_integration): Update the following line
         LockUtil.ensureSufficientLockHeld(lockContext, LockType.NL);
 
-        // TODO(proj2): implement
         root.remove(key);
         return;
     }
@@ -355,7 +338,6 @@ public class BPlusTree {
      * more information.
      */
     public String toSexp() {
-        // TODO(proj4_integration): Update the following line
         LockUtil.ensureSufficientLockHeld(lockContext, LockType.NL);
         return root.toSexp();
     }
@@ -373,7 +355,6 @@ public class BPlusTree {
      * to create a PDF of the tree.
      */
     public String toDot() {
-        // TODO(proj4_integration): Update the following line
         LockUtil.ensureSufficientLockHeld(lockContext, LockType.NL);
 
         List<String> strings = new ArrayList<>();
@@ -458,7 +439,6 @@ public class BPlusTree {
 
     // Iterator ////////////////////////////////////////////////////////////////
     private class BPlusTreeIterator implements Iterator<RecordId> {
-        // TODO(proj2): Add whatever fields and constructors you want here.
         private Iterator<RecordId> curr_iter;
         private LeafNode curr_leaf;
 
@@ -476,7 +456,6 @@ public class BPlusTree {
 
         @Override
         public boolean hasNext() {
-            // TODO(proj2): implement
             if (this.curr_iter.hasNext()) {
                 return true;
             } else if (this.curr_leaf.getRightSibling().isPresent()) {
@@ -493,7 +472,6 @@ public class BPlusTree {
 
         @Override
         public RecordId next() {
-            // TODO(proj2): implement
             if (this.curr_iter.hasNext()) {
                 return this.curr_iter.next();
             } else if (this.curr_leaf.getRightSibling().isPresent()) {
