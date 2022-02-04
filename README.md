@@ -1,7 +1,5 @@
 # RookieDB
 
-![The official unofficial mascot of the class projects](images/derpydb-small.jpg)
-
 This repo contains a bare-bones database implementation, which supports
 executing simple transactions in series. In the assignments of
 this class, you will be adding support for
@@ -12,16 +10,16 @@ locking to support concurrent execution of transactions, and database recovery.
 This project was written in Java 8 using the IntelliJ IDE. Tests were written using the Junit package. 
 The files below have been modified from the original source code and contain all the self-implemented functions and data structures. 
 
-Index/
+index/ \\
 BPlusTree.java, InnerNode.java, LeafNode.java
 
-Query/join/
+query/join/ \\
 BNLJOperator.java, GHJOperator.java, SHJOperator.java, SortMergeOperator.java, a few functions in QueryPlan.java
 
-Concurrency/
+concurrency/ \\
 LockContext.java, LockManager.java, LockType.java, LockUtil.java
 
-Recovery/
+recovery/ \\
 ARIESRecoveryManager.java
 
 ## Overview
